@@ -2,7 +2,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_PRODUCT_LEN 1024
+#define MAX_PRODUCT_LEN  1024
+#define DATA_BUFFER_LEN  27
+#define TRANSFER_TIMEOUT 500
 
 libusb_device *get_device_by_prod_name_prefix(libusb_device **devs, ssize_t cnt,
                                               const char *prefix) {
@@ -88,6 +90,41 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "Got endpoint!\n");
 
+    libusb_device_handle *h = NULL;
+    r = libusb_open(dev, &h);
+    if (r < 0) {
+        fprintf(stderr, "Failed to open device\n");
+        goto finish2;
+    }
+
+    r = libusb_claim_interface(h, 0);
+    if (r < 0) {
+        fprintf(stderr, "Failed to claim interface\n");
+        goto finish3;
+    }
+
+    uint8_t buffer[DATA_BUFFER_LEN];
+    int transferred_len;
+    
+    //struct libusb_transfer transfer;
+    //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
+
+    r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, &transferred_len, TRANSFER_TIMEOUT);
+    if (r < 0) {
+        fprintf(stderr, "Transfer failed\n");
+        goto finish4;
+    }
+
+    fprintf(stderr, "Transferred %d bytes\n", transferred_len);
+    for (i = 0; i < transferred_len; i++) {
+        fprintf(stderr, " %02x", buffer[i]);
+    }
+    fprintf(stderr, "\n");
+
+finish4:
+    libusb_release_interface(h, 0);
+finish3:
+    libusb_close(h);
 finish2:
     libusb_free_config_descriptor(cfgDesc);
 finish:
