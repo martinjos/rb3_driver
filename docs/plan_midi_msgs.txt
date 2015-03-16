@@ -1,0 +1,19 @@
+Setup
+	Set initial program
+
+Key bitmap/velocity levels for note messages
+	Note On
+	Note Off
+
+1,2,A,B buttons for patch/octave
+	Program Change
+	(internal state for octave)
+
+Touch strip/button for expression/pitch bend
+	Control Change
+	Pitch Bend Change
+
+Up button for drum mapping
+	(internal state)
+
+Active Sensing?
