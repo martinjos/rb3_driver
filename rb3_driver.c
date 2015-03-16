@@ -22,6 +22,12 @@
 #define PATCH_DOWN       2 // Key "A"
 #define PATCH_UP         8 // Key "2"
 
+#define MIDI_NOTEON      0x90
+#define MIDI_NOTEOFF     0x80
+#define MIDI_PROGCH      0xC0
+
+#define MIDI_NUMPATCHES  0x80
+
 void mypm_terminate(void *ignored) {
     Pm_Terminate();
 }
@@ -144,6 +150,7 @@ int main(int argc, char **argv) {
     int numKeysDown = 0;
     uint8_t notesDown[NUM_KEYS]; // What note was last activated for a given key?
     uint8_t firstNote = 48;
+    int8_t curPatch = 0;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
@@ -177,13 +184,31 @@ int main(int argc, char **argv) {
             //}
             //fprintf(stderr, "\n");
 
-            if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
-                firstNote <= 84) {
-                firstNote += 12;
-            }
-            if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_DOWN) &&
-                firstNote >= 12) {
-                firstNote -= 12;
+            if (curBuffer[OCTAVE_OFFSET] != lastBuffer[OCTAVE_OFFSET]) {
+
+                if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
+                    firstNote <= 84) {
+                    firstNote += 12;
+                }
+                if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_DOWN) &&
+                    firstNote >= 12) {
+                    firstNote -= 12;
+                }
+
+                // N.B. assuming OCTAVE_OFFSET == PATCH_OFFSET (to save time)
+
+                if (keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_UP)) {
+                    curPatch = (curPatch + 1) % MIDI_NUMPATCHES;
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
+                }
+                if (keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_DOWN)) {
+                    curPatch -= 1;
+                    if (curPatch < 0) {
+                        curPatch = MIDI_NUMPATCHES - 1;
+                    }
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
+                }
+
             }
 
             uint8_t t = 0;
@@ -221,14 +246,14 @@ int main(int argc, char **argv) {
                                 // interests of efficiency.
                                 vel = (0x7f & curBuffer[VELS_OFFSET + velsKeyIndex]);
                             }
-                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, firstNote + keyIndex, vel));
+                            Pm_WriteShort(outStream, 0, Pm_Message(MIDI_NOTEON, firstNote + keyIndex, vel));
                             notesDown[keyIndex] = firstNote + keyIndex;
                             ++numKeysDown;
                         } else {
                             // Note Off
                             //printf("\x80%c\x40", notesDown[keyIndex]);
                             //fprintf(stderr, "Sending NoteOff(%d)\n", notesDown[keyIndex]);
-                            Pm_WriteShort(outStream, 0, Pm_Message(0x80, notesDown[keyIndex], 0x40));
+                            Pm_WriteShort(outStream, 0, Pm_Message(MIDI_NOTEOFF, notesDown[keyIndex], 0x40));
                             --numKeysDown;
                         }
                         //fflush(stdout);
