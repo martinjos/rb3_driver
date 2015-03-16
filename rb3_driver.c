@@ -1,10 +1,86 @@
 #include <libusb.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_PRODUCT_LEN  1024
 #define DATA_BUFFER_LEN  27
 #define TRANSFER_TIMEOUT 500
+
+typedef struct my_atexit_data {
+    void (*func)(void *);
+    void *data;
+    struct my_atexit_data *next;
+} my_atexit_data;
+
+static my_atexit_data *my_atexit_handlers = NULL;
+
+void my_atexit_callback() {
+    my_atexit_data *handler = NULL;
+    while (my_atexit_handlers != NULL) {
+        handler = my_atexit_handlers;
+        my_atexit_handlers = my_atexit_handlers->next;
+        handler->func(handler->next);
+        free(handler);
+    }
+}
+
+static int my_atexit_initialized = 0;
+void my_atexit(void (*func)(void *), void *data) {
+    if (my_atexit_initialized == 0) {
+        my_atexit_initialized = 1;
+        atexit(my_atexit_callback);
+    }
+    my_atexit_data *new_handler =
+        (my_atexit_data *) malloc(sizeof(my_atexit_data));
+    if (new_handler == NULL) {
+        return;
+    }
+    new_handler->func = func;
+    new_handler->data = data;
+    new_handler->next = my_atexit_handlers;
+    my_atexit_handlers = new_handler;
+}
+
+void myusb_unref_device(void *data) {
+    libusb_device *dev = (libusb_device *)data;
+    libusb_unref_device(dev);
+}
+
+void myusb_exit(void *ignored) {
+    libusb_exit(NULL);
+}
+
+void myusb_close(void *data) {
+    libusb_device_handle *h = (libusb_device_handle *)data;
+    libusb_close(h);
+}
+
+void myusb_free_config_descriptor(void *data) {
+    struct libusb_config_descriptor *cfgDesc =
+        (struct libusb_config_descriptor *)data;
+    libusb_free_config_descriptor(cfgDesc);
+}
+
+typedef struct myusb_release_interface_data {
+    libusb_device_handle *dev;
+    int interface_number;
+} myusb_release_interface_data;
+void myusb_release_interface(void *data) {
+    myusb_release_interface_data *d = (myusb_release_interface_data *)data;
+    libusb_release_interface(d->dev, d->interface_number);
+    free(d);
+}
+void myusb_atexit_release_interface(libusb_device_handle *dev, int interface_number) {
+    myusb_release_interface_data *d =
+        (myusb_release_interface_data *)malloc(sizeof(myusb_release_interface_data));
+    if (d == NULL) {
+        return;
+    }
+    d->dev = dev;
+    d->interface_number = interface_number;
+    my_atexit(myusb_release_interface, d);
+}
 
 libusb_device *get_device_by_prod_name_prefix(const char *prefix, int index) {
 
@@ -46,6 +122,7 @@ libusb_device *get_device_by_prod_name_prefix(const char *prefix, int index) {
     if (result != NULL) {
         // Increase reference count of device before freeing list.
         libusb_ref_device(result);
+        my_atexit(myusb_unref_device, result);
     }
 
     libusb_free_device_list(devs, 1);
@@ -60,13 +137,14 @@ int main(int argc, char **argv) {
     if (r < 0) {
         return r;
     }
+    my_atexit(myusb_exit, NULL);
 
     libusb_device *dev =
         get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", 0);
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find device\n");
-        goto finish;
+        return 1;
     }
 
     fprintf(stderr, "Brilliant news! Found device!\n");
@@ -75,12 +153,13 @@ int main(int argc, char **argv) {
     r = libusb_get_active_config_descriptor(dev, &cfgDesc);
     if (r < 0) {
         fprintf(stderr, "Failed to get active config\n");
-        goto finish1;
+        return r;
     }
+    my_atexit(myusb_free_config_descriptor, cfgDesc);
 
     if (cfgDesc->bNumInterfaces < 1 || cfgDesc->interface[0].num_altsetting < 1 || cfgDesc->interface[0].altsetting[0].bNumEndpoints < 1) {
         fprintf(stderr, "No endpoints found\n");
-        goto finish2;
+        return 2;
     }
 
     uint8_t numEndpoints = cfgDesc->interface[0].altsetting[0].bNumEndpoints;
@@ -97,7 +176,7 @@ int main(int argc, char **argv) {
 
     if (endpoint == NULL) {
         fprintf(stderr, "No suitable endpoint\n");
-        goto finish2;
+        return 3;
     }
 
     fprintf(stderr, "Got endpoint!\n");
@@ -106,14 +185,16 @@ int main(int argc, char **argv) {
     r = libusb_open(dev, &h);
     if (r < 0) {
         fprintf(stderr, "Failed to open device\n");
-        goto finish2;
+        return r;
     }
+    my_atexit(myusb_close, h);
 
     r = libusb_claim_interface(h, 0);
     if (r < 0) {
         fprintf(stderr, "Failed to claim interface\n");
-        goto finish3;
+        return r;
     }
+    myusb_atexit_release_interface(h, 0);
 
     uint8_t buffer1[DATA_BUFFER_LEN];
     uint8_t buffer2[DATA_BUFFER_LEN];
@@ -163,17 +244,6 @@ int main(int argc, char **argv) {
         transferred_len = 0;
 
     }
-
-finish4:
-    libusb_release_interface(h, 0);
-finish3:
-    libusb_close(h);
-finish2:
-    libusb_free_config_descriptor(cfgDesc);
-finish1:
-    libusb_unref_device(dev);
-finish:
-    libusb_exit(NULL);
 
     return 0;
 }
