@@ -13,6 +13,14 @@
 #define BITMAP_LEN       4
 #define VELS_OFFSET      8
 #define VELS_LEN         5
+#define NUM_KEYS         (BITMAP_LEN * 8 - 7)
+
+#define OCTAVE_OFFSET    0
+#define OCTAVE_DOWN      1 // Key "1"
+#define OCTAVE_UP        4 // Key "B"
+#define PATCH_OFFSET     0
+#define PATCH_DOWN       2 // Key "A"
+#define PATCH_UP         8 // Key "2"
 
 void mypm_terminate(void *ignored) {
     Pm_Terminate();
@@ -21,6 +29,11 @@ void mypm_terminate(void *ignored) {
 void mypm_close(void *data) {
     PortMidiStream *str = (PortMidiStream *)data;
     Pm_Close(str);
+}
+
+static inline int keyPressed(const char *curBuffer, const char *lastBuffer,
+                             int index, int mask) {
+    return (curBuffer[index] & mask) == mask && (lastBuffer[index] & mask) == 0;
 }
 
 int main(int argc, char **argv) {
@@ -129,6 +142,8 @@ int main(int argc, char **argv) {
     uint8_t *lastBuffer = buffer2;
     int transferred_len = 0;
     int numKeysDown = 0;
+    uint8_t notesDown[NUM_KEYS]; // What note was last activated for a given key?
+    uint8_t firstNote = 48;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
@@ -162,9 +177,18 @@ int main(int argc, char **argv) {
             //}
             //fprintf(stderr, "\n");
 
+            if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
+                firstNote <= 84) {
+                firstNote += 12;
+            }
+            if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_DOWN) &&
+                firstNote >= 12) {
+                firstNote -= 12;
+            }
+
             uint8_t t = 0;
-            uint8_t note = 48;
-            int curKeyIndex = 0;
+            uint8_t keyIndex = 0;
+            int velsKeyIndex = 0;
             uint8_t vel;
 
             // Each byte in bitmap
@@ -172,7 +196,7 @@ int main(int argc, char **argv) {
 
                 // Interferes with velocity array index calculations.
                 //if (curBuffer[i] == lastBuffer[i]) {
-                //    note += 8;
+                //    keyIndex += 8;
                 //    continue;
                 //}
 
@@ -188,30 +212,31 @@ int main(int argc, char **argv) {
                     if (cv != lv) {
                         if (cv) {
                             // Note On
-                            //printf("\x90%c\x40", note);
-                            //fprintf(stderr, "Sending NoteOn(%d)\n", note);
+                            //printf("\x90%c\x40", firstNote + keyIndex);
+                            //fprintf(stderr, "Sending NoteOn(%d)\n", firstNote + keyIndex);
                             vel = 0x40;
-                            if (numKeysDown < VELS_LEN && curKeyIndex < VELS_LEN) {
+                            if (numKeysDown < VELS_LEN && velsKeyIndex < VELS_LEN) {
                                 // N.B. accepting a few strange but harmless
                                 // (and unlikely) edge cases here in the
                                 // interests of efficiency.
-                                vel = (0x7f & curBuffer[VELS_OFFSET + curKeyIndex]);
+                                vel = (0x7f & curBuffer[VELS_OFFSET + velsKeyIndex]);
                             }
-                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, note, vel));
+                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, firstNote + keyIndex, vel));
+                            notesDown[keyIndex] = firstNote + keyIndex;
                             ++numKeysDown;
                         } else {
                             // Note Off
-                            //printf("\x80%c\x40", note);
-                            //fprintf(stderr, "Sending NoteOff(%d)\n", note);
-                            Pm_WriteShort(outStream, 0, Pm_Message(0x80, note, 0x40));
+                            //printf("\x80%c\x40", notesDown[keyIndex]);
+                            //fprintf(stderr, "Sending NoteOff(%d)\n", notesDown[keyIndex]);
+                            Pm_WriteShort(outStream, 0, Pm_Message(0x80, notesDown[keyIndex], 0x40));
                             --numKeysDown;
                         }
                         //fflush(stdout);
                     }
                     if (cv != 0) {
-                        ++curKeyIndex;
+                        ++velsKeyIndex;
                     }
-                    ++note;
+                    ++keyIndex;
                 }
             }
 
