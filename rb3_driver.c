@@ -130,6 +130,46 @@ libusb_device *get_device_by_prod_name_prefix(const char *prefix, int index) {
     return result;
 }
 
+const struct libusb_endpoint_descriptor *
+get_endpoint(libusb_device *dev, uint8_t direction,
+             uint8_t attrs_mask, uint8_t attrs, int index,
+             uint8_t *interface_number) {
+
+    struct libusb_config_descriptor *cfgDesc;
+    int r = libusb_get_active_config_descriptor(dev, &cfgDesc);
+    if (r < 0) {
+        fprintf(stderr, "Failed to get active config\n");
+        return NULL;
+    }
+    my_atexit(myusb_free_config_descriptor, cfgDesc);
+
+    const struct libusb_endpoint_descriptor *endpoint = NULL;
+    int i, j, k;
+    for (i = 0; i < cfgDesc->bNumInterfaces; i++) {
+        for (j = 0; j < cfgDesc->interface[i].num_altsetting; j++) {
+
+            uint8_t numEndpoints = cfgDesc->interface[i].altsetting[j].bNumEndpoints;
+            const struct libusb_endpoint_descriptor *endpoints = &cfgDesc->interface[i].altsetting[j].endpoint[0];
+
+            for (k = 0; k < numEndpoints; k++) {
+                if ((endpoints[k].bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == direction &&
+                    (endpoints[k].bmAttributes & attrs_mask) == attrs) {
+                    if (index == 0) {
+                        endpoint = &endpoints[k];
+                        *interface_number = cfgDesc->interface[i].altsetting[j].bInterfaceNumber;
+                        goto break_outer;
+                    } else {
+                        --index;
+                    }
+                }
+            }
+        }
+    }
+break_outer:
+
+    return endpoint;
+}
+
 int main(int argc, char **argv) {
     int r;
 
@@ -149,34 +189,15 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "Brilliant news! Found device!\n");
 
-    struct libusb_config_descriptor *cfgDesc;
-    r = libusb_get_active_config_descriptor(dev, &cfgDesc);
-    if (r < 0) {
-        fprintf(stderr, "Failed to get active config\n");
-        return r;
-    }
-    my_atexit(myusb_free_config_descriptor, cfgDesc);
-
-    if (cfgDesc->bNumInterfaces < 1 || cfgDesc->interface[0].num_altsetting < 1 || cfgDesc->interface[0].altsetting[0].bNumEndpoints < 1) {
-        fprintf(stderr, "No endpoints found\n");
-        return 2;
-    }
-
-    uint8_t numEndpoints = cfgDesc->interface[0].altsetting[0].bNumEndpoints;
-    const struct libusb_endpoint_descriptor *endpoints = &cfgDesc->interface[0].altsetting[0].endpoint[0];
-    const struct libusb_endpoint_descriptor *endpoint = NULL;
-
-    int i;
-    for (i = 0; i < numEndpoints; i++) {
-        if ((endpoints[i].bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN &&
-            (endpoints[i].bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) == LIBUSB_TRANSFER_TYPE_INTERRUPT) {
-            endpoint = &endpoints[i];
-        }
-    }
+    uint8_t interface_number = 0;
+    const struct libusb_endpoint_descriptor *endpoint =
+        get_endpoint(dev, LIBUSB_ENDPOINT_IN,
+                     LIBUSB_TRANSFER_TYPE_MASK, LIBUSB_TRANSFER_TYPE_INTERRUPT, 0,
+                     &interface_number);
 
     if (endpoint == NULL) {
         fprintf(stderr, "No suitable endpoint\n");
-        return 3;
+        return 2;
     }
 
     fprintf(stderr, "Got endpoint!\n");
@@ -189,12 +210,12 @@ int main(int argc, char **argv) {
     }
     my_atexit(myusb_close, h);
 
-    r = libusb_claim_interface(h, 0);
+    r = libusb_claim_interface(h, interface_number);
     if (r < 0) {
         fprintf(stderr, "Failed to claim interface\n");
         return r;
     }
-    myusb_atexit_release_interface(h, 0);
+    myusb_atexit_release_interface(h, interface_number);
 
     uint8_t buffer1[DATA_BUFFER_LEN];
     uint8_t buffer2[DATA_BUFFER_LEN];
@@ -207,6 +228,7 @@ int main(int argc, char **argv) {
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
 
+    int i;
     while (1) {
 
         r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, curBuffer, DATA_BUFFER_LEN, &transferred_len, TRANSFER_TIMEOUT);
