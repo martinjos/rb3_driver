@@ -52,10 +52,45 @@ int main(int argc, char **argv) {
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find device\n");
-    } else {
-        fprintf(stderr, "Brilliant news! Found device!\n");
+        goto finish;
     }
 
+    fprintf(stderr, "Brilliant news! Found device!\n");
+
+    struct libusb_config_descriptor *cfgDesc;
+    r = libusb_get_active_config_descriptor(dev, &cfgDesc);
+    if (r < 0) {
+        fprintf(stderr, "Failed to get active config\n");
+        goto finish;
+    }
+
+    if (cfgDesc->bNumInterfaces < 1 || cfgDesc->interface[0].num_altsetting < 1 || cfgDesc->interface[0].altsetting[0].bNumEndpoints < 1) {
+        fprintf(stderr, "No endpoints found\n");
+        goto finish2;
+    }
+
+    uint8_t numEndpoints = cfgDesc->interface[0].altsetting[0].bNumEndpoints;
+    const struct libusb_endpoint_descriptor *endpoints = &cfgDesc->interface[0].altsetting[0].endpoint[0];
+    const struct libusb_endpoint_descriptor *endpoint = NULL;
+
+    int i;
+    for (i = 0; i < numEndpoints; i++) {
+        if ((endpoints[i].bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN &&
+            (endpoints[i].bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) == LIBUSB_TRANSFER_TYPE_INTERRUPT) {
+            endpoint = &endpoints[i];
+        }
+    }
+
+    if (endpoint == NULL) {
+        fprintf(stderr, "No suitable endpoint\n");
+        goto finish2;
+    }
+
+    fprintf(stderr, "Got endpoint!\n");
+
+finish2:
+    libusb_free_config_descriptor(cfgDesc);
+finish:
     libusb_free_device_list(devs, 1);
     libusb_exit(NULL);
 
