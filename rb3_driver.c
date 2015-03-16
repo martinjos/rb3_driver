@@ -103,23 +103,52 @@ int main(int argc, char **argv) {
         goto finish3;
     }
 
-    uint8_t buffer[DATA_BUFFER_LEN];
-    int transferred_len;
+    uint8_t buffer1[DATA_BUFFER_LEN];
+    uint8_t buffer2[DATA_BUFFER_LEN];
+    memset(buffer1, 0, sizeof(buffer1));
+    memset(buffer2, 0, sizeof(buffer2));
+    uint8_t *curBuffer = buffer1;
+    uint8_t *otherBuffer = buffer2;
+    int transferred_len = 0, pending_len = 0;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
 
-    r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, &transferred_len, TRANSFER_TIMEOUT);
-    if (r < 0) {
-        fprintf(stderr, "Transfer failed\n");
-        goto finish4;
-    }
+    while (1) {
 
-    fprintf(stderr, "Transferred %d bytes\n", transferred_len);
-    for (i = 0; i < transferred_len; i++) {
-        fprintf(stderr, " %02x", buffer[i]);
+        r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, curBuffer + pending_len, DATA_BUFFER_LEN - pending_len, &transferred_len, TRANSFER_TIMEOUT);
+
+        if (r < 0 || transferred_len == 0) {
+            fprintf(stderr, "Transfer failed\n");
+            break;
+        }
+
+        if (pending_len + transferred_len < DATA_BUFFER_LEN) {
+            pending_len += transferred_len;
+            transferred_len = 0;
+            continue;
+        }
+
+        transferred_len += pending_len;
+        pending_len = 0;
+
+        if (memcmp(curBuffer, otherBuffer, DATA_BUFFER_LEN) != 0) {
+
+            for (i = 0; i < transferred_len; i++) {
+                fprintf(stderr, " %02x", curBuffer[i]);
+            }
+            fprintf(stderr, "\n");
+
+            // Swap buffers
+            uint8_t *tmp = curBuffer;
+            curBuffer = otherBuffer;
+            otherBuffer = tmp;
+
+        }
+
+        transferred_len = 0;
+
     }
-    fprintf(stderr, "\n");
 
 finish4:
     libusb_release_interface(h, 0);
