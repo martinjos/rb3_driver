@@ -75,7 +75,7 @@ change buttons, and modulation/pitch-bend touch panel are almost fully
 implemented (I think the only thing missing is octave/program reset).
 
 Drum split, all foot pedal features, and the sequencer control buttons are so
-far not implemented.
+far not implemented.  The output LEDs are also not supported at present.
 
 
 Legal disclaimers
@@ -92,8 +92,7 @@ your jurisdiction.
 
 A full disclaimer of warranty may be found in the Apache license, version 2.0,
 under which this software is licensed, available from
-
-    http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Harmonix and Rock Band are trademarks of Harmonix Music Systems, Inc.
 
