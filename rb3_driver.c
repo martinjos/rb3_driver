@@ -6,8 +6,15 @@
 #define DATA_BUFFER_LEN  27
 #define TRANSFER_TIMEOUT 500
 
-libusb_device *get_device_by_prod_name_prefix(libusb_device **devs, ssize_t cnt,
-                                              const char *prefix) {
+libusb_device *get_device_by_prod_name_prefix(const char *prefix) {
+
+    libusb_device **devs;
+    ssize_t cnt = libusb_get_device_list(NULL, &devs);
+    if (cnt < 0) {
+        fprintf(stderr, "Failed to get device list\n");
+        return NULL;
+    }
+
     ssize_t i;
     struct libusb_device_descriptor desc;
     libusb_device_handle *h;
@@ -31,6 +38,14 @@ libusb_device *get_device_by_prod_name_prefix(libusb_device **devs, ssize_t cnt,
         }
         libusb_close(h);
     }
+
+    if (result != NULL) {
+        // Increase reference count of device before freeing list.
+        libusb_ref_device(result);
+    }
+
+    libusb_free_device_list(devs, 1);
+
     return result;
 }
 
@@ -42,15 +57,8 @@ int main(int argc, char **argv) {
         return r;
     }
 
-    libusb_device **devs;
-    ssize_t cnt = libusb_get_device_list(NULL, &devs);
-    if (cnt < 0) {
-        fprintf(stderr, "List is empty\n");
-        return (int)cnt;
-    }
-
     libusb_device *dev =
-        get_device_by_prod_name_prefix(devs, cnt, "Harmonix RB3 Keyboard");
+        get_device_by_prod_name_prefix("Harmonix RB3 Keyboard");
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find device\n");
@@ -63,7 +71,7 @@ int main(int argc, char **argv) {
     r = libusb_get_active_config_descriptor(dev, &cfgDesc);
     if (r < 0) {
         fprintf(stderr, "Failed to get active config\n");
-        goto finish;
+        goto finish1;
     }
 
     if (cfgDesc->bNumInterfaces < 1 || cfgDesc->interface[0].num_altsetting < 1 || cfgDesc->interface[0].altsetting[0].bNumEndpoints < 1) {
@@ -158,8 +166,9 @@ finish3:
     libusb_close(h);
 finish2:
     libusb_free_config_descriptor(cfgDesc);
+finish1:
+    libusb_unref_device(dev);
 finish:
-    libusb_free_device_list(devs, 1);
     libusb_exit(NULL);
 
     return 0;
