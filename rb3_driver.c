@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <portmidi.h>
 
 #include "myusb_atexit.h"
 #include "myusb_utils.h"
@@ -9,11 +10,71 @@
 #define DATA_BUFFER_LEN  27
 #define TRANSFER_TIMEOUT 500
 
+void mypm_terminate(void *ignored) {
+    Pm_Terminate();
+}
+
+void mypm_close(void *data) {
+    PortMidiStream *str = (PortMidiStream *)data;
+    Pm_Close(str);
+}
+
 int main(int argc, char **argv) {
     int r;
+    int i;
+    int printUsage = 0;
 
+    if (argc < 2) {
+        fprintf(stderr, "\nUsage: rb3_driver 'MIDI output device name'\n");
+        fprintf(stderr, "\nAvailable output devices:\n\n");
+        printUsage = 1;
+        //return 4;
+    }
+
+    /* initialize portmidi */
+    r = Pm_Initialize();
+    if (r < 0) {
+        fprintf(stderr, "Failed to initialize portmidi\n");
+        return r;
+    };
+    my_atexit(mypm_terminate, NULL);
+
+    int pmdCount = Pm_CountDevices();
+    //fprintf(stderr, "Got %d portmidi devices\n", pmdCount);
+    PmDeviceID pmDev = -1;
+    for (i = 0; i < pmdCount; i++) {
+        const PmDeviceInfo *pmdInfo = Pm_GetDeviceInfo(i);
+        if (pmdInfo != NULL && pmdInfo->output != 0) {
+            if (printUsage) {
+                fprintf(stderr, "  '%s'\n", pmdInfo->name);
+            } else if (strcmp(argv[1], pmdInfo->name) == 0) {
+                pmDev = i;
+            }
+        }
+    }
+    if (printUsage) {
+        fprintf(stderr, "\n");
+        return 4;
+    }
+    if (pmDev == -1) {
+        fprintf(stderr, "Unable to find MIDI output device\n");
+        return 3;
+    }
+
+    PortMidiStream *outStream;
+    r = Pm_OpenOutput(&outStream, pmDev, NULL, 0, NULL, NULL, 0);
+    if (r < 0) {
+        fprintf(stderr, "Failed to open MIDI output device\n");
+        return r;
+    }
+    my_atexit(mypm_close, outStream);
+
+    fprintf(stderr, "Got MIDI output device!\n");
+
+    /* Initialize libusb */
     r = libusb_init(NULL);
     if (r < 0) {
+        fprintf(stderr, "Failed to initialize libusb\n");
         return r;
     }
     my_atexit(myusb_exit, NULL);
@@ -22,11 +83,11 @@ int main(int argc, char **argv) {
         myusb_get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", 0);
 
     if (dev == NULL) {
-        fprintf(stderr, "Failed to find device\n");
+        fprintf(stderr, "Failed to find input device\n");
         return 1;
     }
 
-    fprintf(stderr, "Brilliant news! Found device!\n");
+    fprintf(stderr, "Brilliant news! Found input device!\n");
 
     uint8_t interface_number = 0;
     const struct libusb_endpoint_descriptor *endpoint =
@@ -35,23 +96,23 @@ int main(int argc, char **argv) {
                      &interface_number);
 
     if (endpoint == NULL) {
-        fprintf(stderr, "No suitable endpoint\n");
+        fprintf(stderr, "No suitable endpoint on input device\n");
         return 2;
     }
 
-    fprintf(stderr, "Got endpoint!\n");
+    fprintf(stderr, "Got input device endpoint!\n");
 
     libusb_device_handle *h = NULL;
     r = libusb_open(dev, &h);
     if (r < 0) {
-        fprintf(stderr, "Failed to open device\n");
+        fprintf(stderr, "Failed to open input device\n");
         return r;
     }
     my_atexit(myusb_close, h);
 
     r = libusb_claim_interface(h, interface_number);
     if (r < 0) {
-        fprintf(stderr, "Failed to claim interface\n");
+        fprintf(stderr, "Failed to claim input device interface\n");
         return r;
     }
     myusb_atexit_release_interface(h, interface_number);
@@ -67,7 +128,6 @@ int main(int argc, char **argv) {
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
 
-    int i;
     uint8_t bitmask, t, note;
     int cv, lv;
     while (1) {
@@ -75,18 +135,18 @@ int main(int argc, char **argv) {
         r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, curBuffer, DATA_BUFFER_LEN, &transferred_len, TRANSFER_TIMEOUT);
 
         if (r == LIBUSB_ERROR_TIMEOUT) {
-            fprintf(stderr, "Data transfer timed out\n");
+            fprintf(stderr, "Data transfer timed out (input)\n");
             continue;
         }
 
         if (r < 0 || transferred_len == 0) {
             // N.B. this happens when the USB dongle is removed.
-            fprintf(stderr, "Data transfer failed\n");
+            fprintf(stderr, "Data transfer failed (input)\n");
             break;
         }
 
         if (transferred_len < DATA_BUFFER_LEN) {
-            fprintf(stderr, "Wrong packet size\n");
+            fprintf(stderr, "Wrong packet size (input)\n");
             continue;
         }
 
@@ -116,12 +176,16 @@ int main(int argc, char **argv) {
                     if (cv != lv) {
                         if (cv) {
                             // Note On
-                            printf("\x90%c\x40", note);
+                            //printf("\x90%c\x40", note);
+                            //fprintf(stderr, "Sending NoteOn(%d)\n", note);
+                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, note, 0x40));
                         } else {
                             // Note Off
-                            printf("\x80%c\x40", note);
+                            //printf("\x80%c\x40", note);
+                            //fprintf(stderr, "Sending NoteOff(%d)\n", note);
+                            Pm_WriteShort(outStream, 0, Pm_Message(0x80, note, 0x40));
                         }
-                        fflush(stdout);
+                        //fflush(stdout);
                     }
                     ++note;
                 }

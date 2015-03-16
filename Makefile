@@ -1,4 +1,4 @@
-LDLIBS += -lusb-1.0
+LDLIBS += -lusb-1.0 -lportmidi
 
 all: rb3_driver
 
