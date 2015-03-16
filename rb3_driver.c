@@ -61,13 +61,15 @@ int main(int argc, char **argv) {
     memset(buffer1, 0, sizeof(buffer1));
     memset(buffer2, 0, sizeof(buffer2));
     uint8_t *curBuffer = buffer1;
-    uint8_t *otherBuffer = buffer2;
+    uint8_t *lastBuffer = buffer2;
     int transferred_len = 0;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
 
     int i;
+    uint8_t bitmask, t, note;
+    int cv, lv;
     while (1) {
 
         r = libusb_interrupt_transfer(h, endpoint->bEndpointAddress, curBuffer, DATA_BUFFER_LEN, &transferred_len, TRANSFER_TIMEOUT);
@@ -88,17 +90,47 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        if (memcmp(curBuffer, otherBuffer, DATA_BUFFER_LEN) != 0) {
+        if (memcmp(curBuffer, lastBuffer, DATA_BUFFER_LEN) != 0) {
 
-            for (i = 0; i < DATA_BUFFER_LEN; i++) {
-                fprintf(stderr, " %02x", curBuffer[i]);
+            //for (i = 0; i < DATA_BUFFER_LEN; i++) {
+            //    fprintf(stderr, " %02x", curBuffer[i]);
+            //}
+            //fprintf(stderr, "\n");
+
+            // Each byte in bitmap
+            t = 0;
+            note = 48;
+            for (i = 5; i < 9; i++) {
+                if (curBuffer[i] == lastBuffer[i]) {
+                    note += 8;
+                    continue;
+                }
+                if (i == 8) {
+                    // Last byte only has one bit to process.
+                    t = 0x40;
+                }
+                // Each bit
+                for (bitmask = 0x80; bitmask != t; bitmask >>= 1) {
+                    cv = curBuffer[i] & bitmask;
+                    lv = lastBuffer[i] & bitmask;
+                    if (cv != lv) {
+                        if (cv) {
+                            // Note On
+                            printf("\x90%c\x40", note);
+                        } else {
+                            // Note Off
+                            printf("\x80%c\x40", note);
+                        }
+                        fflush(stdout);
+                    }
+                    ++note;
+                }
             }
-            fprintf(stderr, "\n");
 
             // Swap buffers
             uint8_t *tmp = curBuffer;
-            curBuffer = otherBuffer;
-            otherBuffer = tmp;
+            curBuffer = lastBuffer;
+            lastBuffer = tmp;
 
         }
 
