@@ -6,7 +6,7 @@
 #define DATA_BUFFER_LEN  27
 #define TRANSFER_TIMEOUT 500
 
-libusb_device *get_device_by_prod_name_prefix(const char *prefix) {
+libusb_device *get_device_by_prod_name_prefix(const char *prefix, int index) {
 
     libusb_device **devs;
     ssize_t cnt = libusb_get_device_list(NULL, &devs);
@@ -34,7 +34,11 @@ libusb_device *get_device_by_prod_name_prefix(const char *prefix) {
         r = libusb_get_string_descriptor_ascii(h, desc.iProduct,
                                                prodName, MAX_PRODUCT_LEN);
         if (r >= 0 && strncmp(prefix, prodName, prefixLen) == 0) {
-            result = devs[i];
+            if (index == 0) {
+                result = devs[i];
+            } else {
+                --index;
+            }
         }
         libusb_close(h);
     }
@@ -58,7 +62,7 @@ int main(int argc, char **argv) {
     }
 
     libusb_device *dev =
-        get_device_by_prod_name_prefix("Harmonix RB3 Keyboard");
+        get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", 0);
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find device\n");
