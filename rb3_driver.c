@@ -21,10 +21,15 @@
 #define PATCH_OFFSET     0
 #define PATCH_DOWN       2 // Key "A"
 #define PATCH_UP         8 // Key "2"
+#define PBBTN_OFFSET     13
+#define PBBTN_VALUE      0x80
+#define MOD_OFFSET       15
 
 #define MIDI_NOTEON      0x90
 #define MIDI_NOTEOFF     0x80
 #define MIDI_PROGCH      0xC0
+#define MIDI_CTRLCH      0xB0
+#define MIDI_PBEND       0xE0
 
 #define MIDI_NUMPATCHES  0x80
 
@@ -209,6 +214,26 @@ int main(int argc, char **argv) {
                     Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
                 }
 
+            }
+
+            if (curBuffer[MOD_OFFSET] != lastBuffer[MOD_OFFSET] &&
+                curBuffer[PBBTN_OFFSET] == lastBuffer[PBBTN_OFFSET]) {
+
+                if ((curBuffer[PBBTN_OFFSET] & PBBTN_VALUE) == PBBTN_VALUE) {
+                    // Pitch bend
+                    uint8_t value = 0x40; // Reset value
+                    if (curBuffer[MOD_OFFSET] != 0) {
+                        value = curBuffer[MOD_OFFSET] - 1;
+                        Pm_WriteShort(outStream, 0,
+                            Pm_Message(MIDI_PBEND, 0, value));
+                    }
+                } else {
+                    // Modulation
+                    if (curBuffer[MOD_OFFSET] != 0) {
+                        Pm_WriteShort(outStream, 0,
+                            Pm_Message(MIDI_CTRLCH, 1, curBuffer[MOD_OFFSET] - 1));
+                    }
+                }
             }
 
             uint8_t t = 0;
