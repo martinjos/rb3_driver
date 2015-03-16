@@ -9,6 +9,10 @@
 
 #define DATA_BUFFER_LEN  27
 #define TRANSFER_TIMEOUT 500
+#define BITMAP_OFFSET    5
+#define BITMAP_LEN       4
+#define VELS_OFFSET      8
+#define VELS_LEN         5
 
 void mypm_terminate(void *ignored) {
     Pm_Terminate();
@@ -124,11 +128,12 @@ int main(int argc, char **argv) {
     uint8_t *curBuffer = buffer1;
     uint8_t *lastBuffer = buffer2;
     int transferred_len = 0;
+    int numKeysDown = 0;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
 
-    uint8_t bitmask, t, note;
+    uint8_t bitmask;
     int cv, lv;
     while (1) {
 
@@ -157,18 +162,25 @@ int main(int argc, char **argv) {
             //}
             //fprintf(stderr, "\n");
 
+            uint8_t t = 0;
+            uint8_t note = 48;
+            int curKeyIndex = 0;
+            uint8_t vel;
+
             // Each byte in bitmap
-            t = 0;
-            note = 48;
-            for (i = 5; i < 9; i++) {
-                if (curBuffer[i] == lastBuffer[i]) {
-                    note += 8;
-                    continue;
-                }
-                if (i == 8) {
+            for (i = BITMAP_OFFSET; i < BITMAP_OFFSET + BITMAP_LEN; i++) {
+
+                // Interferes with velocity array index calculations.
+                //if (curBuffer[i] == lastBuffer[i]) {
+                //    note += 8;
+                //    continue;
+                //}
+
+                if (i == BITMAP_OFFSET + BITMAP_LEN - 1) {
                     // Last byte only has one bit to process.
                     t = 0x40;
                 }
+
                 // Each bit
                 for (bitmask = 0x80; bitmask != t; bitmask >>= 1) {
                     cv = curBuffer[i] & bitmask;
@@ -178,14 +190,26 @@ int main(int argc, char **argv) {
                             // Note On
                             //printf("\x90%c\x40", note);
                             //fprintf(stderr, "Sending NoteOn(%d)\n", note);
-                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, note, 0x40));
+                            vel = 0x40;
+                            if (numKeysDown < VELS_LEN && curKeyIndex < VELS_LEN) {
+                                // N.B. accepting a few strange but harmless
+                                // (and unlikely) edge cases here in the
+                                // interests of efficiency.
+                                vel = (0x7f & curBuffer[VELS_OFFSET + curKeyIndex]);
+                            }
+                            Pm_WriteShort(outStream, 0, Pm_Message(0x90, note, vel));
+                            ++numKeysDown;
                         } else {
                             // Note Off
                             //printf("\x80%c\x40", note);
                             //fprintf(stderr, "Sending NoteOff(%d)\n", note);
                             Pm_WriteShort(outStream, 0, Pm_Message(0x80, note, 0x40));
+                            --numKeysDown;
                         }
                         //fflush(stdout);
+                    }
+                    if (cv != 0) {
+                        ++curKeyIndex;
                     }
                     ++note;
                 }
