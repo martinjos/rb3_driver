@@ -17,7 +17,7 @@ static void my_atexit_callback() {
     while (my_atexit_handlers != NULL) {
         handler = my_atexit_handlers;
         my_atexit_handlers = my_atexit_handlers->next;
-        handler->func(handler->next);
+        handler->func(handler->data);
         free(handler);
     }
 }
