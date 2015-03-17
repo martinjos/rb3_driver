@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     int printUsage = 0;
 
     if (argc < 2) {
-        fprintf(stderr, "\nUsage: rb3_driver 'MIDI output device name'\n");
+        fprintf(stderr, "\nUsage: rb3_driver \"MIDI output device name\"\n");
         fprintf(stderr, "\nAvailable output devices:\n\n");
         printUsage = 1;
         //return 4;
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
         const PmDeviceInfo *pmdInfo = Pm_GetDeviceInfo(i);
         if (pmdInfo != NULL && pmdInfo->output != 0) {
             if (printUsage) {
-                fprintf(stderr, "  '%s'\n", pmdInfo->name);
+                fprintf(stderr, "  \"%s\"\n", pmdInfo->name);
             } else if (strcmp(argv[1], pmdInfo->name) == 0) {
                 pmDev = i;
             }
