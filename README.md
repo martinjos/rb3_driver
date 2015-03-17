@@ -28,8 +28,7 @@ using the dongle that comes with the device.
 
 The dongle does not support standard USB-MIDI, so this driver converts the
 dongle's USB packets into MIDI and sends the messages to a MIDI output
-interface of your choosing.  If you run the program (in a console) with no
-arguments, it will scan your system and display a list of MIDI output devices.
+interface of your choosing.
 
 To use the driver's output as input to another program, you need some way of
 patching the MIDI "Out" of this program to the MIDI "In" of the other program.
@@ -48,9 +47,19 @@ Do I need to install it / is it complicated to use?
 ---------------------------------------------------
 
 No, it's just a normal program.  You just compile the program, and run it (as a
-normal user), giving the name of the MIDI output device as an argument.  It
-should automatically detect the correct USB device, provided that the keytar
-dongle is plugged in.
+normal user), giving the name of the MIDI output device as an argument.  If you
+run the program with no arguments, it will scan your system and display a list
+of MIDI output devices (to the console).
+
+It should automatically detect the correct USB (input) device, provided that
+the keytar dongle is plugged in.
+
+Most systems will have at least one built-in MIDI output device that
+corresponds to your sound card's or operating system's built-in MIDI
+synthesizer.  If you install MIDI Yoke on Windows, it provides a set of 8
+virtual MIDI output devices that send all their data to the corresponding
+virtual MIDI input device (which has the same number but "In" instead of
+"Out").
 
 
 What are the dependencies / how do I compile it?
