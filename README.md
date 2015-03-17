@@ -71,15 +71,35 @@ How much of the keytar's functionality is implemented?
 ------------------------------------------------------
 
 At the moment, the keys themselves (including velocity), octave & program
-change buttons, and modulation/pitch-bend touch panel are almost fully
-implemented (I think the only thing missing is octave/program reset).
+change buttons, the modulation/pitch-bend touch panel, and drum split are
+almost fully implemented (I think the only thing missing is octave/program
+reset).
 
-Drum split, all foot pedal features, and the sequencer control buttons are so
-far not implemented.  The output LEDs are also not supported at present.
+Note that drum split requires a General MIDI-compliant synthesizer program.  If
+your synthesizer program is not General MIDI compliant, it may output either
+nothing at all, or a confusing array of jumbled up notes, when drum split is
+active and the drum keys (i.e. the lower 12) are pressed.
+
+All foot pedal features, the sequencer control buttons, and LED output are so
+far not implemented.
 
 
-Legal disclaimers
------------------
+License
+-------
+
+This software is licensed under the Apache License, Version 2.0 (the "License");
+you may not use this software except in compliance with the License.
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+
+Additional legal disclaimers
+----------------------------
 
 The author of this software is not associated or affiliated with Harmonix Music
 Systems, Inc., and this software is not in any way endorsed or approved by
@@ -89,10 +109,6 @@ This software is provided "as-is", for educational purposes only.  The author
 takes no responsibility for any attempt to use this software with Harmonix
 products, and provides no guarantee or affirmation that it is legal to do so in
 your jurisdiction.
-
-A full disclaimer of warranty may be found in the Apache license, version 2.0,
-under which this software is licensed, available from
-http://www.apache.org/licenses/LICENSE-2.0
 
 Harmonix and Rock Band are trademarks of Harmonix Music Systems, Inc.
 

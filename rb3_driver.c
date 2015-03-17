@@ -31,6 +31,10 @@
 #define VELS_OFFSET      8
 #define VELS_LEN         5
 #define NUM_KEYS         (BITMAP_LEN * 8 - 7)
+#define NORMAL_CHAN      0
+#define DEFAULT_VEL      0x40
+#define DRUMMAP_CHAN     9
+#define DRUMMAP_NKEYS    12
 
 #define OCTAVE_OFFSET    0
 #define OCTAVE_DOWN      1 // Key "1"
@@ -42,13 +46,27 @@
 #define PBBTN_VALUE      0x80
 #define MOD_OFFSET       15
 
+#define DPAD_OFFSET      2
+#define DPAD_MASK        0xf
+#define DPAD_UP          0
+#define DPAD_RIGHT       2
+#define DPAD_DOWN        4
+#define DPAD_LEFT        6
+#define DPAD_CENTER      8
+
 #define MIDI_NOTEON      0x90
 #define MIDI_NOTEOFF     0x80
 #define MIDI_PROGCH      0xC0
 #define MIDI_CTRLCH      0xB0
 #define MIDI_PBEND       0xE0
 
+#define MIDI_CHANMASK    0xf
 #define MIDI_NUMPATCHES  0x80
+
+uint8_t drumMapNotes[] = {
+    35, 36, 38, 40, 41, 47,
+    50, 42, 46, 49, 51, 53,
+};
 
 void mypm_terminate(void *ignored) {
     Pm_Terminate();
@@ -171,8 +189,10 @@ int main(int argc, char **argv) {
     int transferred_len = 0;
     int numKeysDown = 0;
     uint8_t notesDown[NUM_KEYS]; // What note was last activated for a given key?
+    uint8_t chansDown[DRUMMAP_NKEYS]; // What channel was last activated for a given key?
     uint8_t firstNote = 48;
     int8_t curPatch = 0;
+    int8_t drumMapOn = 0;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
@@ -201,6 +221,7 @@ int main(int argc, char **argv) {
 
         if (memcmp(curBuffer, lastBuffer, DATA_BUFFER_LEN) != 0) {
 
+            // DEBUG: dump input USB packet
             //for (i = 0; i < DATA_BUFFER_LEN; i++) {
             //    fprintf(stderr, " %02x", curBuffer[i]);
             //}
@@ -253,10 +274,22 @@ int main(int argc, char **argv) {
                 }
             }
 
+            int curDpad = curBuffer[DPAD_OFFSET] & DPAD_MASK;
+            int lastDpad = lastBuffer[DPAD_OFFSET] & DPAD_MASK;
+            if (curDpad != DPAD_CENTER && curDpad != lastDpad) {
+                switch (curDpad) {
+                case DPAD_UP:
+                    drumMapOn = !drumMapOn;
+                    break;
+                }
+            }
+
             uint8_t t = 0;
             uint8_t keyIndex = 0;
             int velsKeyIndex = 0;
             uint8_t vel;
+            uint8_t chan;
+            uint8_t note;
 
             // Each byte in bitmap
             for (i = BITMAP_OFFSET; i < BITMAP_OFFSET + BITMAP_LEN; i++) {
@@ -279,23 +312,40 @@ int main(int argc, char **argv) {
                     if (cv != lv) {
                         if (cv) {
                             // Note On
-                            //printf("\x90%c\x40", firstNote + keyIndex);
-                            //fprintf(stderr, "Sending NoteOn(%d)\n", firstNote + keyIndex);
-                            vel = 0x40;
+                            chan = NORMAL_CHAN;
+                            note = firstNote + keyIndex;
+                            //printf("\x90%c\x40", note);
+                            //fprintf(stderr, "Sending NoteOn(%d)\n", note);
+                            if (keyIndex < DRUMMAP_NKEYS) {
+                                if (drumMapOn) {
+                                    chan = DRUMMAP_CHAN;
+                                    note = drumMapNotes[keyIndex];
+                                }
+                                chansDown[keyIndex] = chan;
+                            }
+                            vel = DEFAULT_VEL;
                             if (numKeysDown < VELS_LEN && velsKeyIndex < VELS_LEN) {
                                 // N.B. accepting a few strange but harmless
                                 // (and unlikely) edge cases here in the
                                 // interests of efficiency.
                                 vel = (0x7f & curBuffer[VELS_OFFSET + velsKeyIndex]);
                             }
-                            Pm_WriteShort(outStream, 0, Pm_Message(MIDI_NOTEON, firstNote + keyIndex, vel));
-                            notesDown[keyIndex] = firstNote + keyIndex;
+                            Pm_WriteShort(outStream, 0,
+                                Pm_Message(MIDI_NOTEON | (MIDI_CHANMASK & chan),
+                                           note, vel));
+                            notesDown[keyIndex] = note;
                             ++numKeysDown;
                         } else {
                             // Note Off
                             //printf("\x80%c\x40", notesDown[keyIndex]);
                             //fprintf(stderr, "Sending NoteOff(%d)\n", notesDown[keyIndex]);
-                            Pm_WriteShort(outStream, 0, Pm_Message(MIDI_NOTEOFF, notesDown[keyIndex], 0x40));
+                            chan = NORMAL_CHAN;
+                            if (keyIndex < DRUMMAP_NKEYS) {
+                                chan = chansDown[keyIndex];
+                            }
+                            Pm_WriteShort(outStream, 0,
+                                Pm_Message(MIDI_NOTEOFF | (MIDI_CHANMASK & chan),
+                                           notesDown[keyIndex], 0x40));
                             --numKeysDown;
                         }
                         //fflush(stdout);
