@@ -1,8 +1,8 @@
 RB3 Wireless MIDI Keyboard Driver
 =================================
 
-This is a user-mode "driver" for the Harmonix (TM) Rock Band (TM) 3 wireless
-MIDI keyboard ("keytar") in wireless mode.
+This is a user-mode "driver" for the Harmonix Rock Band 3 wireless MIDI
+keyboard ("keytar") in wireless mode.
 
 So far, it has only been tested with the Wii version of the keytar, although I
 see no reason in principle why most functionality should not work with the
@@ -102,13 +102,15 @@ Additional legal disclaimers
 ----------------------------
 
 The author of this software is not associated or affiliated with Harmonix Music
-Systems, Inc., and this software is not in any way endorsed or approved by
-that company or its associates.
+Systems, Inc., or Nintendo Co., Ltd. and this software is not in any way
+endorsed or approved by those companies or their subsidiaries/associates.
 
 This software is provided "as-is", for educational purposes only.  The author
 takes no responsibility for any attempt to use this software with Harmonix
-products, and provides no guarantee or affirmation that it is legal to do so in
-your jurisdiction.
+and/or Nintendo products, and provides no guarantee or affirmation that it is
+legal to do so in your jurisdiction.
 
-Harmonix and Rock Band are trademarks of Harmonix Music Systems, Inc.
+Harmonix and Rock Band are trademarks of Harmonix Music Systems, Inc.  Nintendo
+and Wii are trademarks of Nintendo Co., Ltd.  The author does not claim any
+rights over those trademarks.
 
