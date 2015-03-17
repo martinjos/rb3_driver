@@ -12,11 +12,11 @@ other versions.
 What is the keytar?
 -------------------
 
-The keytar is a 2-octave (25-key) keyboard with full-size spring-loaded keys,
-octave shift and program change buttons, a footswitch/modulation pedal jack,
-and a dual-function modulation/pitch-bend touch panel.  It comes with a USB
-dongle that communicates wirelessly with the keytar.  It also has a standard
-MIDI out (DIN) jack.
+The keytar is a 2-octave (25-key) keyboard with full-size spring-loaded
+velocity-sensitive keys, octave shift and program change buttons, a
+footswitch/modulation pedal jack, and a dual-function modulation/pitch-bend
+touch panel.  It comes with a USB dongle that communicates wirelessly with the
+keytar.  It also has a standard MIDI out (DIN) jack.
 
 
 What is this driver supposed to do?
@@ -114,10 +114,9 @@ The author of this software is not associated or affiliated with Harmonix Music
 Systems, Inc., or Nintendo Co., Ltd. and this software is not in any way
 endorsed or approved by those companies or their subsidiaries/associates.
 
-This software is provided "as-is", for educational purposes only.  The author
-takes no responsibility for any attempt to use this software with Harmonix
-and/or Nintendo products, and provides no guarantee or affirmation that it is
-legal to do so in your jurisdiction.
+The author takes no responsibility for any attempt to use this software with
+Harmonix and/or Nintendo products, and provides no guarantee or affirmation
+that it is legal to do so in your jurisdiction.
 
 Harmonix and Rock Band are trademarks of Harmonix Music Systems, Inc.  Nintendo
 and Wii are trademarks of Nintendo Co., Ltd.  The author does not claim any
