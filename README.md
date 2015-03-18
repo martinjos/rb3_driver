@@ -80,9 +80,10 @@ How much of the keytar's functionality is implemented?
 ------------------------------------------------------
 
 At the moment, the keys themselves (including velocity), octave & program
-change buttons, the modulation/pitch-bend touch panel, drum split, and all foot
-pedal features (including stomp and mode change), are almost fully implemented
-(I think the only thing missing is octave/program reset).
+change buttons, the modulation/pitch-bend touch panel, drum split, all foot
+pedal features (including stomp and mode change), and the sequencer control
+buttons, are almost fully implemented (I think the only thing missing is
+octave/program reset).
 
 Note that drum split requires a General MIDI-compliant synthesizer program.  If
 your synthesizer program is not General MIDI compliant, it may output either
@@ -95,7 +96,7 @@ having a velocity of exactly 64 (50% of the maximum value), regardless of the
 actual velocity.  This is an unavoidable limitation of the keytar's USB packet
 format.
 
-The sequencer control buttons, and LED output are so far not implemented.
+LED output is so far not implemented.
 
 
 License

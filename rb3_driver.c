@@ -51,6 +51,10 @@
 #define PEDST_STOMP      1
 #define PEDST_PARTIAL    2
 #define PEDST_FULL       3
+#define SEQ_OFFSET       1
+#define SEQ_STOP         0x01
+#define SEQ_CONT         0x10
+#define SEQ_START        0x02
 
 #define DPAD_OFFSET      2
 #define DPAD_MASK        0xf
@@ -65,12 +69,16 @@
 #define MIDI_PROGCH      0xC0
 #define MIDI_CTRLCH      0xB0
 #define MIDI_PBEND       0xE0
+#define MIDI_SEQSTART    0xFA
+#define MIDI_SEQCONT     0xFB
+#define MIDI_SEQSTOP     0xFC
 
 #define MIDI_CC_MOD      1
 #define MIDI_CC_FOOT     4
 #define MIDI_CC_VOL      7
 #define MIDI_CC_EXP      11
 #define MIDI_CC_DAMP     64
+#define MIDI_CM_ALLOFF   0x7B
 
 #define MIDI_CHANMASK    0xf
 #define MIDI_NUMPATCHES  0x80
@@ -87,6 +95,10 @@ void mypm_terminate(void *ignored) {
 void mypm_close(void *data) {
     PortMidiStream *str = (PortMidiStream *)data;
     Pm_Close(str);
+}
+
+static inline int keyDown(const char *buffer, int index, int mask) {
+    return (buffer[index] & mask) == mask;
 }
 
 static inline int keyPressed(const char *curBuffer, const char *lastBuffer,
@@ -199,6 +211,8 @@ int main(int argc, char **argv) {
     uint8_t *curBuffer = buffer1;
     uint8_t *lastBuffer = buffer2;
     int transferred_len = 0;
+
+    // MIDI state
     int numKeysDown = 0;
     uint8_t notesDown[NUM_KEYS]; // What note was last activated for a given key?
     uint8_t chansDown[DRUMMAP_NKEYS]; // What channel was last activated for a given key?
@@ -267,6 +281,38 @@ int main(int argc, char **argv) {
                     Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
                 }
 
+            }
+
+            // Sequencer controls
+
+            if (curBuffer[SEQ_OFFSET] != lastBuffer[SEQ_OFFSET]) {
+                uint8_t start = keyPressed(curBuffer, lastBuffer, SEQ_OFFSET, SEQ_START);
+                uint8_t cont = keyPressed(curBuffer, lastBuffer, SEQ_OFFSET, SEQ_CONT);
+                uint8_t stop = keyPressed(curBuffer, lastBuffer, SEQ_OFFSET, SEQ_STOP);
+
+                if (keyDown(curBuffer, SEQ_OFFSET, SEQ_START) &&
+                    keyDown(curBuffer, SEQ_OFFSET, SEQ_CONT) &&
+                    keyDown(curBuffer, SEQ_OFFSET, SEQ_STOP) &&
+                    (start || cont || stop)) {
+
+                    // Turn off all notes on all channels.
+
+                    // First, cancel any sequence commands that may have been
+                    // started by mistake.
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_SEQSTOP, 0, 0));
+
+                    Pm_WriteShort(outStream, 0,
+                        Pm_Message(MIDI_CTRLCH | NORMAL_CHAN, MIDI_CM_ALLOFF, 0));
+                    Pm_WriteShort(outStream, 0,
+                        Pm_Message(MIDI_CTRLCH | DRUMMAP_CHAN, MIDI_CM_ALLOFF, 0));
+
+                } else if (start) {
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_SEQSTART, 0, 0));
+                } else if (cont) {
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_SEQCONT, 0, 0));
+                } else if (stop) {
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_SEQSTOP, 0, 0));
+                }
             }
 
             // Modulation and pitch bend
