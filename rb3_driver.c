@@ -44,7 +44,13 @@
 #define PATCH_UP         8 // Key "2"
 #define PBBTN_OFFSET     13
 #define PBBTN_VALUE      0x80
+#define PED_OFFSET       14
 #define MOD_OFFSET       15
+#define PEDST_OFFSET     20
+#define PEDST_REST       0
+#define PEDST_STOMP      1
+#define PEDST_PARTIAL    2
+#define PEDST_FULL       3
 
 #define DPAD_OFFSET      2
 #define DPAD_MASK        0xf
@@ -59,6 +65,12 @@
 #define MIDI_PROGCH      0xC0
 #define MIDI_CTRLCH      0xB0
 #define MIDI_PBEND       0xE0
+
+#define MIDI_CC_MOD      1
+#define MIDI_CC_FOOT     4
+#define MIDI_CC_VOL      7
+#define MIDI_CC_EXP      11
+#define MIDI_CC_DAMP     64
 
 #define MIDI_CHANMASK    0xf
 #define MIDI_NUMPATCHES  0x80
@@ -193,6 +205,7 @@ int main(int argc, char **argv) {
     uint8_t firstNote = 48;
     int8_t curPatch = 0;
     int8_t drumMapOn = 0;
+    uint8_t pedalCC = MIDI_CC_EXP;
     
     //struct libusb_transfer transfer;
     //libusb_fill_interrupt_transfer(&transfer, h, endpoint->bEndpointAddress, buffer, DATA_BUFFER_LEN, got_data, NULL, TRANSFER_TIMEOUT);
@@ -227,6 +240,8 @@ int main(int argc, char **argv) {
             //}
             //fprintf(stderr, "\n");
 
+            // Octave and program change
+
             if (curBuffer[OCTAVE_OFFSET] != lastBuffer[OCTAVE_OFFSET]) {
 
                 if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
@@ -254,6 +269,8 @@ int main(int argc, char **argv) {
 
             }
 
+            // Modulation and pitch bend
+
             if (curBuffer[MOD_OFFSET] != lastBuffer[MOD_OFFSET] &&
                 curBuffer[PBBTN_OFFSET] == lastBuffer[PBBTN_OFFSET]) {
 
@@ -269,20 +286,64 @@ int main(int argc, char **argv) {
                     // Modulation
                     if (curBuffer[MOD_OFFSET] != 0) {
                         Pm_WriteShort(outStream, 0,
-                            Pm_Message(MIDI_CTRLCH, 1, curBuffer[MOD_OFFSET] - 1));
+                            Pm_Message(MIDI_CTRLCH, MIDI_CC_MOD,
+                                       curBuffer[MOD_OFFSET] - 1));
                     }
                 }
             }
 
+            // Drum split & pedal mode
+
             int curDpad = curBuffer[DPAD_OFFSET] & DPAD_MASK;
             int lastDpad = lastBuffer[DPAD_OFFSET] & DPAD_MASK;
             if (curDpad != DPAD_CENTER && curDpad != lastDpad) {
+                uint8_t newPedalCC = pedalCC;
                 switch (curDpad) {
                 case DPAD_UP:
                     drumMapOn = !drumMapOn;
                     break;
+                case DPAD_LEFT:
+                    newPedalCC = MIDI_CC_EXP;
+                    break;
+                case DPAD_DOWN:
+                    newPedalCC = MIDI_CC_VOL;
+                    break;
+                case DPAD_RIGHT:
+                    newPedalCC = MIDI_CC_FOOT;
+                    break;
+                }
+                if (newPedalCC != pedalCC) {
+                    // Reset old pedal to rest state
+                    // Don't do this - the keyboard doesn't.
+                    // It may be useful to "hold" a value of one pedal while
+                    // changing another.
+                    //Pm_WriteShort(outStream, 0,
+                    //    Pm_Message(MIDI_CTRLCH, pedalCC, 0x7F));
+                    pedalCC = newPedalCC;
                 }
             }
+
+            // Pedal value
+
+            uint8_t curPedal = curBuffer[PED_OFFSET];
+            uint8_t lastPedal = lastBuffer[PED_OFFSET];
+            if (curPedal != lastPedal) {
+                uint8_t curAnalog = curPedal & 0x7F;
+                uint8_t lastAnalog = lastPedal & 0x7F;
+                if (curAnalog != lastAnalog) {
+                    Pm_WriteShort(outStream, 0,
+                        Pm_Message(MIDI_CTRLCH, pedalCC, curAnalog));
+                }
+                uint8_t curDigital = curPedal & 0x80;
+                uint8_t lastDigital = lastPedal & 0x80;
+                if (curDigital != lastDigital) {
+                    Pm_WriteShort(outStream, 0,
+                        Pm_Message(MIDI_CTRLCH, MIDI_CC_DAMP,
+                                   curDigital ? 0x7F : 0));
+                }
+            }
+
+            // Keys
 
             uint8_t t = 0;
             uint8_t keyIndex = 0;

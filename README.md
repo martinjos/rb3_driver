@@ -80,25 +80,31 @@ How much of the keytar's functionality is implemented?
 ------------------------------------------------------
 
 At the moment, the keys themselves (including velocity), octave & program
-change buttons, the modulation/pitch-bend touch panel, and drum split are
-almost fully implemented (I think the only thing missing is octave/program
-reset).
+change buttons, the modulation/pitch-bend touch panel, drum split, and all foot
+pedal features (including stomp and mode change), are almost fully implemented
+(I think the only thing missing is octave/program reset).
 
 Note that drum split requires a General MIDI-compliant synthesizer program.  If
 your synthesizer program is not General MIDI compliant, it may output either
 nothing at all, or a confusing array of jumbled up notes, when drum split is
 active and the drum keys (i.e. the lower 12) are pressed.
 
-All foot pedal features, the sequencer control buttons, and LED output are so
-far not implemented.
+Also note that the velocity-sensitivity is limited to at most 5 simultaneous
+keys - if 5 keys are held down and you strike another, it will register as
+having a velocity of exactly 64 (50% of the maximum value), regardless of the
+actual velocity.  This is an unavoidable limitation of the keytar's USB packet
+format.
+
+The sequencer control buttons, and LED output are so far not implemented.
 
 
 License
 -------
 
-This software is licensed under the Apache License, Version 2.0 (the "License");
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+This software (including all documentation) is licensed under the Apache
+License, Version 2.0 (the "License"); you may not use this software except in
+compliance with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -109,6 +115,14 @@ limitations under the License.
 
 Additional legal disclaimers
 ----------------------------
+
+The author can not be held responsible for the content, safety, security,
+freeness from bugs or viruses, or fitness-for-purpose of websites
+mentioned/linked to from this file/this repository, nor of the third-party
+programs and libraries mentioned here or anywhere in this repository (even
+those mentioned as dependencies).  If you download, install, or otherwise use
+any of these programs and libraries, or visit any of the websites, you do so
+entirely at your own risk.
 
 The author of this software is not associated or affiliated with Harmonix Music
 Systems, Inc., or Nintendo Co., Ltd. and this software is not in any way

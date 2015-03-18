@@ -1,0 +1,53 @@
+Resistance values for RB3 pedal jack
+
+infinite        7F
+7.5k            7F
+6.8k            7D
+5.6k            79
+3k              67
+1k              39
+470             18
+330             0A
+270             04
+220             00 (Expression)
+150             00 (Exp)
+56              00 (Exp)
+27              00 (Exp)
+7               00 (Exp)
+4.7             00 (Exp + Pedal (Sustain))
+2.2             00 (Exp + Ped)
+1               00 (Exp + Ped)
+
+Left: 1k: Expression [CC 11] (default)
+Down: 1k: Volume [CC 7]
+Right: 1k: Foot controller [CC 4]
+
+Left: 1: Exp + Pedal [CC 64] (default)
+Down: 1: Vol + Ped
+Right: 1: Foot + Ped
+
+As soon as it realises it is dealing with a digital stomp pedal, it resets the
+analog value to its rest state (so only Pedal (Sustain) is asserted).
+        For analog, the rest state (in MIDI) is 7F (in all modes)
+        For digital, the rest state (in MIDI) is 00, and active state is 7F
+
+Analog range: 220 - 7500/inf
+Digital range: 0 - 4.7 (it's basically looking for a short)
+
+When switching to a new type of analog pedal, it does _not_ reset the value of
+the old analog pedal.
+
+Byte 14 is the pedal!
+        00 - 7F         analog (7F is rest state)
+        FF              digital stomp (or high bit is stomp, low bits indicate
+                        analog rest state)
+
+Byte 20 seems to be
+        00      if byte 14 == 7F
+        01      if byte 14 == FF (digital stomp)
+        02      if 00 < byte 14 < 7F
+        03      if byte 14 == 00
+
+Except that if the keyboard is disconnected, bytes 14 and 20 are both 00 (as is
+byte 25 - although this can become 00 anyway).
+

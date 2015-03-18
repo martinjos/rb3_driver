@@ -1,0 +1,55 @@
+Reverse engineered input frame format
+
+Btns ??  Bmp   Vels PBB Ped Mod ??    PedSt ??    ?  Seq ?
+0-2  3-4 5-7/8 8-12 13  14  15  16-19 20    21-23 24 25  26
+
+Each frame is 27 bytes.
+The exact same set of 27 bytes is repeated continually until the state of the
+keyboard changes.
+
+Byte 0 represents the state of the 1, 2, A, and B buttons (each is 1 bit).
+Byte 1 represents the state of the -, Power, and + buttons (each is 1 bit).
+Byte 2 represents the state of the directional pad (0-7: 8 compass points, 8: centre [pad inactive])
+Bytes 3-4 are always 80.
+Byte 5-7/8 is a bitmap of currently depressed keys.
+  Each byte represents 8 contiguous keys on the keyboard, starting with the
+  leftmost 8 keys and continuing to the right with each subsequent byte.
+  Within a byte, the highest bit represents the leftmost key, and so on.
+  The final, 25th key (high C) is represented by the leftmost bit of byte 8 -
+  presumably, the velocities only use 7 bits each.
+Bytes 8-12 consist of between 1 and 5 bytes each representing a velocity value
+for one of the keys.
+  If there are fewer than 5 keys depressed, this array is padded on the
+  right with zeros.
+  If there are more than 5 keys depressed, only the (chronologically)
+  first 5 keys to be pressed have their velocities represented.
+  The velocities are sorted in the order that the keys appear on the
+  keyboard (_not_ in chronological order!).
+  If 6 or more keys are depressed, and then one or more of the first keys
+  (chronologically) to be depressed is released, leaving the keyboard with 5
+  or more keys still depressed (some of which were not in the initial 5), the
+  velocities of one or more of the "extra" keys (which were previously hidden)
+  are shown as 40 (even if this is not the true velocity value).
+    This is the case even if exactly 5 keys then remain in the depressed state.
+    However, if the number of depressed keys reduces to 4 or less, all keys'
+    true velocity values are shown, even those previously shown as 40 or
+    hidden altogether.
+Byte 13's high bit represents the state of the pitch bend button.
+Byte 14 represents the analog pedal value in the low 7 bits (rest state is 7F),
+and the digital stomp pedal value in the high bit (rest state is 0).
+Byte 15 represents the modulation slider value as a 7-bit value.
+  However, it does not differentiate between modulation mode and pitch bend
+  mode.
+  Also, it resets to the value 00 as soon as you remove your finger.
+  N.B. the value 00 does not seem to be otherwise reached.
+Bytes 16-19 are always 00.
+Byte 20 represents the pedal state abstractly.
+Bytes 21-23 are always 00.
+Byte 24 is always e0.
+Byte 25 seems to be a sequence number.
+  Whenever the state of the keyboard changes, the value increases by 1.
+  After it reaches ff, it wraps around to 00 with no other effect.
+  When the keyboard switches off, this resets to 00.
+  If the keyboard comes back on, the value reverts to the last value
+  transmitted when it was last on.
+Byte 26 is always 0b.
