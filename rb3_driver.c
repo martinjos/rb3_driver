@@ -21,6 +21,15 @@
 #include <stdlib.h>
 #include <portmidi.h>
 
+#ifdef _POSIX_SOURCE
+    #include <unistd.h>
+#endif
+
+#ifdef _WIN32
+    #include <windows.h>
+    #define sleep(x) Sleep(1000*(x))
+#endif
+
 #include "myusb_atexit.h"
 #include "myusb_utils.h"
 
@@ -85,6 +94,8 @@
 #define MIDI_CHANMASK    0xf
 #define MIDI_NUMPATCHES  0x80
 
+#define SLEEP_IF_CHOOSEDEVICE() do { if (chooseDevice) sleep(3); } while (0)
+
 uint8_t drumMapNotes[] = {
     35, 36, 38, 40, 41, 47,
     50, 42, 46, 49, 51, 53,
@@ -110,13 +121,12 @@ static inline int keyPressed(const char *curBuffer, const char *lastBuffer,
 
 int main(int argc, char **argv) {
     int r;
-    int i;
-    int printUsage = 0;
+    int i, j, k;
+    int chooseDevice = 0;
 
     if (argc < 2) {
-        fprintf(stderr, "\nUsage: rb3_driver \"MIDI output device name\"\n");
         fprintf(stderr, "\nAvailable output devices:\n\n");
-        printUsage = 1;
+        chooseDevice = 1;
         //return 4;
     }
 
@@ -124,6 +134,7 @@ int main(int argc, char **argv) {
     r = Pm_Initialize();
     if (r < 0) {
         fprintf(stderr, "Failed to initialize portmidi\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return r;
     };
     my_atexit(mypm_terminate, NULL);
@@ -131,22 +142,35 @@ int main(int argc, char **argv) {
     int pmdCount = Pm_CountDevices();
     //fprintf(stderr, "Got %d portmidi devices\n", pmdCount);
     PmDeviceID pmDev = -1;
-    for (i = 0; i < pmdCount; i++) {
+    for (i = 0, j = 1; i < pmdCount; ++i) {
         const PmDeviceInfo *pmdInfo = Pm_GetDeviceInfo(i);
         if (pmdInfo != NULL && pmdInfo->output != 0) {
-            if (printUsage) {
-                fprintf(stderr, "  \"%s\"\n", pmdInfo->name);
+            if (chooseDevice) {
+                fprintf(stderr, " %d: \"%s\"\n", j, pmdInfo->name);
             } else if (strcmp(argv[1], pmdInfo->name) == 0) {
                 pmDev = i;
             }
+            ++j;
         }
     }
-    if (printUsage) {
+    if (chooseDevice) {
+        fprintf(stderr, "\nPlease type the number of your chosen output MIDI device and press the Enter key.\n\n");
+        scanf("%d", &k);
         fprintf(stderr, "\n");
-        return 4;
+        for (i = 0, j = 1; i < pmdCount; ++i) {
+            const PmDeviceInfo *pmdInfo = Pm_GetDeviceInfo(i);
+            if (pmdInfo != NULL && pmdInfo->output != 0) {
+                if (j == k) {
+                    pmDev = i;
+                    break;
+                }
+                ++j;
+            }
+        }
     }
     if (pmDev == -1) {
         fprintf(stderr, "Unable to find MIDI output device\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return 3;
     }
 
@@ -154,6 +178,7 @@ int main(int argc, char **argv) {
     r = Pm_OpenOutput(&outStream, pmDev, NULL, 0, NULL, NULL, 0);
     if (r < 0) {
         fprintf(stderr, "Failed to open MIDI output device\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return r;
     }
     my_atexit(mypm_close, outStream);
@@ -164,6 +189,7 @@ int main(int argc, char **argv) {
     r = libusb_init(NULL);
     if (r < 0) {
         fprintf(stderr, "Failed to initialize libusb\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return r;
     }
     my_atexit(myusb_exit, NULL);
@@ -173,6 +199,7 @@ int main(int argc, char **argv) {
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find input device\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return 1;
     }
 
@@ -186,6 +213,7 @@ int main(int argc, char **argv) {
 
     if (endpoint == NULL) {
         fprintf(stderr, "No suitable endpoint on input device\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return 2;
     }
 
@@ -195,6 +223,7 @@ int main(int argc, char **argv) {
     r = libusb_open(dev, &h);
     if (r < 0) {
         fprintf(stderr, "Failed to open input device\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return r;
     }
     my_atexit(myusb_close, h);
@@ -202,6 +231,7 @@ int main(int argc, char **argv) {
     r = libusb_claim_interface(h, interface_number);
     if (r < 0) {
         fprintf(stderr, "Failed to claim input device interface\n");
+        SLEEP_IF_CHOOSEDEVICE();
         return r;
     }
     myusb_atexit_release_interface(h, interface_number);

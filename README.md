@@ -8,6 +8,8 @@ So far, it has only been tested with the Wii version of the keytar, although I
 see no reason in principle why most functionality should not work with the
 other versions.
 
+Please see the bottom of this document for licensing and disclaimers.
+
 
 What is the keytar?
 -------------------
@@ -40,30 +42,40 @@ Yoke.
 If you do use MIDI Yoke (on Windows), bear in mind that you do *not* need to
 manually create a patch using MIDI-OX.  In fact, if you do this, it will not
 work properly.  [I found this out the hard way. :-)]  Simply use the MIDI Yoke
-"Out" and "In" devices with corresponding numbers, and it will work.
+"Out" and "In" devices with corresponding numbers, and it should work.
 
 
 Do I need to install it / is it complicated to use?
 ---------------------------------------------------
 
-No, it's just a normal program.  You just compile the program, and run it (as a
-normal user), giving the name of the MIDI output device as an argument.  If you
-run the program with no arguments, it will scan your system and display a list
-of MIDI output devices (to the console).
+No, it's just a normal program.  The simplest way to use it (on Windows) is
+just to expand the zip file to a folder, then double-click "rb3_driver" in the
+folder.  You will be presented with a numbered list of MIDI output devices.
+Just type the number of your chosen output device, and press the Enter key on
+your keyboard.  If something goes wrong, the program will display an error
+message, then exit automatically after a few seconds.  To close the program at
+any time, just close the window.  While in use, you can minimise the program in
+the normal way if you want to avoid cluttering up your screen.
 
 It should automatically detect the correct USB (input) device, provided that
 the keytar dongle is plugged in.
 
 Most systems will have at least one built-in MIDI output device that
 corresponds to your sound card's or operating system's built-in MIDI
-synthesizer.  If you install MIDI Yoke on Windows, it provides a set of 8
-virtual MIDI output devices that send all their data to the corresponding
-virtual MIDI input device (which has the same number but "In" instead of
-"Out").
+synthesizer.  However, this will usually be of low quality, and you will
+probably want to connect it to something else.  If you install MIDI Yoke on
+Windows, it provides a set of 8 virtual MIDI output devices that send all their
+data to the corresponding virtual MIDI input device (which has the same number
+but "In" instead of "Out").  This works exactly like a digital patch cable.
+You can set up your synthesizer or sequencer program to use this as its input.
 
 
 What are the dependencies / how do I compile it?
 ------------------------------------------------
+
+If you are using Windows, the good news is that you don't have to compile it
+yourself.  A ready-compiled version of the program (with dependencies included)
+is available from https://github.com/martinjos/rb3_driver/releases
 
 So far, I have only compiled it under MinGW32/MSYS.  However, it should in
 principle work just as well on Linux or even (possibly) Mac OS X.
