@@ -33,6 +33,8 @@
 #define NUM_KEYS         (BITMAP_LEN * 8 - 7)
 #define NORMAL_CHAN      0
 #define DEFAULT_VEL      0x40
+#define DEFAULT_1STNOTE  48
+#define DEFAULT_PATCH    0
 #define DRUMMAP_CHAN     9
 #define DRUMMAP_NKEYS    12
 
@@ -216,8 +218,8 @@ int main(int argc, char **argv) {
     int numKeysDown = 0;
     uint8_t notesDown[NUM_KEYS]; // What note was last activated for a given key?
     uint8_t chansDown[DRUMMAP_NKEYS]; // What channel was last activated for a given key?
-    uint8_t firstNote = 48;
-    int8_t curPatch = 0;
+    uint8_t firstNote = DEFAULT_1STNOTE;
+    int8_t curPatch = DEFAULT_PATCH;
     int8_t drumMapOn = 0;
     uint8_t pedalCC = MIDI_CC_EXP;
     
@@ -258,22 +260,38 @@ int main(int argc, char **argv) {
 
             if (curBuffer[OCTAVE_OFFSET] != lastBuffer[OCTAVE_OFFSET]) {
 
-                if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
-                    firstNote <= 84) {
+                uint8_t upOctPressed = keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_UP);
+                uint8_t downOctPressed = keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_DOWN);
+
+                if ((upOctPressed || downOctPressed) &&
+                    keyDown(curBuffer, OCTAVE_OFFSET, OCTAVE_UP) &&
+                    keyDown(curBuffer, OCTAVE_OFFSET, OCTAVE_DOWN)) {
+
+                    firstNote = DEFAULT_1STNOTE;
+
+                } else if (upOctPressed && firstNote <= 84) {
                     firstNote += 12;
-                }
-                if (keyPressed(curBuffer, lastBuffer, OCTAVE_OFFSET, OCTAVE_DOWN) &&
-                    firstNote >= 12) {
+                } else if (downOctPressed && firstNote >= 12) {
                     firstNote -= 12;
                 }
 
                 // N.B. assuming OCTAVE_OFFSET == PATCH_OFFSET (to save time)
 
-                if (keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_UP)) {
+                uint8_t upPatchPressed = keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_UP);
+                uint8_t downPatchPressed = keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_DOWN);
+
+                if ((upPatchPressed || downPatchPressed) &&
+                    keyDown(curBuffer, PATCH_OFFSET, PATCH_UP) &&
+                    keyDown(curBuffer, PATCH_OFFSET, PATCH_DOWN)) {
+
+                    curPatch = DEFAULT_PATCH;
+                    Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
+
+                } else if (upPatchPressed) {
                     curPatch = (curPatch + 1) % MIDI_NUMPATCHES;
                     Pm_WriteShort(outStream, 0, Pm_Message(MIDI_PROGCH, curPatch, 0));
-                }
-                if (keyPressed(curBuffer, lastBuffer, PATCH_OFFSET, PATCH_DOWN)) {
+
+                } else if (downPatchPressed) {
                     curPatch -= 1;
                     if (curPatch < 0) {
                         curPatch = MIDI_NUMPATCHES - 1;
@@ -290,10 +308,10 @@ int main(int argc, char **argv) {
                 uint8_t cont = keyPressed(curBuffer, lastBuffer, SEQ_OFFSET, SEQ_CONT);
                 uint8_t stop = keyPressed(curBuffer, lastBuffer, SEQ_OFFSET, SEQ_STOP);
 
-                if (keyDown(curBuffer, SEQ_OFFSET, SEQ_START) &&
+                if ((start || cont || stop) &&
+                    keyDown(curBuffer, SEQ_OFFSET, SEQ_START) &&
                     keyDown(curBuffer, SEQ_OFFSET, SEQ_CONT) &&
-                    keyDown(curBuffer, SEQ_OFFSET, SEQ_STOP) &&
-                    (start || cont || stop)) {
+                    keyDown(curBuffer, SEQ_OFFSET, SEQ_STOP)) {
 
                     // Turn off all notes on all channels.
 

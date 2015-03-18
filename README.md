@@ -82,8 +82,8 @@ How much of the keytar's functionality is implemented?
 At the moment, the keys themselves (including velocity), octave & program
 change buttons, the modulation/pitch-bend touch panel, drum split, all foot
 pedal features (including stomp and mode change), and the sequencer control
-buttons, are almost fully implemented (I think the only thing missing is
-octave/program reset).
+buttons, are fully implemented.  (Let me know if you find any bugs or missing
+features.)
 
 Note that drum split requires a General MIDI-compliant synthesizer program.  If
 your synthesizer program is not General MIDI compliant, it may output either
