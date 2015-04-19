@@ -114,16 +114,30 @@ LED output is so far not implemented.
 License
 -------
 
-This software (including all documentation) is licensed under the Apache
-License, Version 2.0 (the "License"); you may not use this software except in
-compliance with the License.  You may obtain a copy of the License at
-http://www.apache.org/licenses/LICENSE-2.0
+All authors, contributors, and holders of copyright in this repository hereby
+grant (to the extent to which they have the power to do so) all recipients of
+the repository a perpetual, worldwide, non-exclusive, no-charge, royalty-free,
+irrevocable copyright and patent (but not trademark) license to make absolutely
+any use of the content of the repository, and the copyrights and patentable
+inventions embodied in it, as though it (and the inventions) were in the public
+domain. This includes but is not limited to the rights to use for any purpose,
+copy/reproduce in any form, modify or produce derivative works, merge, publish,
+distribute modified/derived or unmodified copies for any purpose with or
+without fee, sublicense, sell, offer to sell, import or otherwise transfer,
+publicly perform or display, make, have made, etc. If you modify your copy of
+this repository, preserving this notice, and then redistribute the modified
+version, or intentionally submit modifications to be merged into this
+repository, then in so doing you assert that the notice automatically applies
+to the modified repository/the modifications and all patentable inventions
+embodied therein.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+THIS REPOSITORY IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE REPOSITORY OR THE USE OR OTHER DEALINGS IN THE
+REPOSITORY.
 
 
 Additional legal disclaimers
