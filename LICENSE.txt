@@ -1,26 +1,21 @@
 Copyright 2015 Martin Sidaway
 
-All authors, contributors, and holders of copyright in this repository hereby
-grant (to the extent to which they have the power to do so) all recipients of
-the repository a perpetual, worldwide, non-exclusive, no-charge, royalty-free,
-irrevocable copyright and patent (but not trademark) license to make absolutely
-any use of the content of the repository, and the copyrights and patentable
-inventions embodied in it, as though it (and the inventions) were in the public
-domain. This includes but is not limited to the rights to use for any purpose,
-copy/reproduce in any form, modify or produce derivative works, merge, publish,
-distribute modified/derived or unmodified copies for any purpose with or
-without fee, sublicense, sell, offer to sell, import or otherwise transfer,
-publicly perform or display, make, have made, etc. If you modify your copy of
-this repository, preserving this notice, and then redistribute the modified
-version, or intentionally submit modifications to be merged into this
-repository, then in so doing you assert that the notice automatically applies
-to the modified repository/the modifications and all patentable inventions
-embodied therein.
+A perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+copyright and patent license is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including without
+limitation (and in any combination) the rights to use, copy, modify, merge,
+reimplement, publish, distribute, sublicense, and/or sell copies of the
+Software (and/or portions thereof), and to permit persons to whom the Software
+is furnished to do so. This license includes a waiver of the authors',
+copyright-holders' and (where applicable) patent-holders' rights to exclude
+such activities on the basis of present or future patent ownership and/or
+confer such rights of exclusion onto others.
 
-THIS REPOSITORY IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE REPOSITORY OR THE USE OR OTHER DEALINGS IN THE
-REPOSITORY.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT OR PATENT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
