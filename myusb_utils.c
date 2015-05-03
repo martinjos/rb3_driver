@@ -11,7 +11,8 @@
  * Software is furnished to do so. This license includes a waiver of the
  * authors', copyright-holders' and (where applicable) patent-holders' rights
  * to exclude such activities on the basis of present or future patent
- * ownership and/or confer such rights of exclusion onto others.
+ * ownership and/or confer such rights of exclusion onto others, insofar as
+ * such patents pertain to the patent-holders' contributions to the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

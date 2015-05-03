@@ -114,6 +114,8 @@ LED output is so far not implemented.
 License
 -------
 
+Copyright (c) 2015 Martin Sidaway
+
 A perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable
 copyright and patent license is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files (the
@@ -124,7 +126,8 @@ Software (and/or portions thereof), and to permit persons to whom the Software
 is furnished to do so. This license includes a waiver of the authors',
 copyright-holders' and (where applicable) patent-holders' rights to exclude
 such activities on the basis of present or future patent ownership and/or
-confer such rights of exclusion onto others.
+confer such rights of exclusion onto others, insofar as such patents pertain to
+the patent-holders' contributions to the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
