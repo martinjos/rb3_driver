@@ -21,7 +21,7 @@
  * 
  */
 
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -234,6 +234,7 @@ int main(int argc, char **argv) {
     }
     my_atexit(myusb_close, h);
 
+    r = libusb_detach_kernel_driver(h, interface_number);
     r = libusb_claim_interface(h, interface_number);
     if (r < 0) {
         fprintf(stderr, "Failed to claim input device interface\n");
