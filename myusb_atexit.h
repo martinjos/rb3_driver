@@ -24,7 +24,7 @@
 #ifndef MYUSB_ATEXIT_H
 #define MYUSB_ATEXIT_H 1
 
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 
 #include "my_atexit.h"
 

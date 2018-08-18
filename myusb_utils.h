@@ -24,7 +24,7 @@
 #ifndef MYUSB_UTILS_H
 #define MYUSB_UTILS_H 1
 
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 
 extern libusb_device *myusb_get_device_by_prod_name_prefix(const char *prefix, int index);
 extern const struct libusb_endpoint_descriptor *
