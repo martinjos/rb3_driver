@@ -206,7 +206,6 @@ int main(int argc, char **argv) {
     {
         device_index = atoi(argv[2]);
     }
-    printf("Index %d", device_index);
 
     libusb_device *dev =
         myusb_get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", device_index);
