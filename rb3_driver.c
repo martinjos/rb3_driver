@@ -200,8 +200,15 @@ int main(int argc, char **argv) {
     }
     my_atexit(myusb_exit, NULL);
 
+    // Hardcoded args n shit
+    int device_index = 0;
+    if (argc >= 3)
+    {
+        device_index = atoi(argv[2]);
+    }
+
     libusb_device *dev =
-        myusb_get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", 0);
+        myusb_get_device_by_prod_name_prefix("Harmonix RB3 Keyboard", device_index);
 
     if (dev == NULL) {
         fprintf(stderr, "Failed to find input device\n");
@@ -234,6 +241,7 @@ int main(int argc, char **argv) {
     }
     my_atexit(myusb_close, h);
 
+    r = libusb_detach_kernel_driver(h, interface_number);
     r = libusb_claim_interface(h, interface_number);
     if (r < 0) {
         fprintf(stderr, "Failed to claim input device interface\n");
